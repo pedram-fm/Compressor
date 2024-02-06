@@ -4,12 +4,24 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        volumes:
-            - .:/var/www/html
+        user: bitnami
         ports:
-            - "8080:80"
+            - "8000:8000"
+            - "3000:3000"
+            - "8080:8080"
         depends_on:
-            - db
+          db:
+            condition: service_healthy
+
+        environment:
+          DB_CONNECTION: mysql
+          DB_HOST: db
+          DB_PORT: "3306"
+          DB_DATABASE: compressor
+          DB_USERNAME: compressor
+          DB_PASSWORD: compressor
+          APP_ENV: developement
+          ZIP_TYPE: zip
 
     db:
         image: mysql:5.7
@@ -20,12 +32,9 @@ services:
             MYSQL_ROOT_PASSWORD: compressor
         ports:
             - "3306:3306"
-
-    nginx:
-        image: nginx:latest
-        volumes:
-            - ./nginx.conf:/etc/nginx/nginx.conf
-        ports:
-            - "8000:80"
-        depends_on:
-            - app
+        healthcheck:
+          test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+          start_period: 30s
